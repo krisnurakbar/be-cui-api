@@ -22,13 +22,24 @@ app.get('/', (req, res) => {
 });
 
 app.use('/auth', authRoutes);  // Import authRoutes from separate file
+
 app.use('/users', userRoutes);  // Import userRoutes from separate file
-app.use('/projects', projectRoutes);  // Import projectRoutes from separate file
-app.use('/tasks', taskRoutes);  // Import taskRoutes from separate file
-app.use('/api/task', cuProjectRoutes);  // Import cuProjectRoutes from separate file
+
+app.use('/projects', projectRoutes);  // Import userRoutes from separate file
+
+app.use('/tasks', taskRoutes);  // Import userRoutes from separate file
+
+app.use('/api/task', cuProjectRoutes);  // Import userRoutes from separate file
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
 
 // Database synchronization
 const sequelize = require('./config/database');
+
 
 sequelize.sync({ alter: true })
     .then(() => {
@@ -37,9 +48,3 @@ sequelize.sync({ alter: true })
     .catch((err) => {
         console.error('Error syncing database', err);
     });
-
-// Export the app for use in serverless function
-module.exports = (req, res) => {
-    // Use express's handle function to handle requests
-    app(req, res);
-};
