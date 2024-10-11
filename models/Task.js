@@ -55,7 +55,7 @@ Task.init({
         allowNull: true,
     },
     spi: {
-        type: DataTypes.DECIMAL(4, 2), // Schedule Performance Index
+        type: DataTypes.DECIMAL(4, 2), //test Schedule Performance Index
         allowNull: true,
     },
     cpi: {
