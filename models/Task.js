@@ -64,7 +64,7 @@ Task.init({
     },
     status: {
         type: DataTypes.BOOLEAN,
-        defaultValue: true,  // Default status to true (active)
+        defaultValue: true,  //test Default status to true (active)
       },
     created_at: {
         type: DataTypes.DATE, // Change here to DataTypes.DATE
