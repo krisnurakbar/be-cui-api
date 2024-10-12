@@ -1,4 +1,4 @@
-const Task = require('../../models/Task'); // Adjust path if needed
+const pool = require('../../config/database'); // Import the pg connection pool
 
 class cuProjectController {
     static async insertTask(req, res) {
@@ -8,20 +8,23 @@ class cuProjectController {
             return res.status(400).json({ message: 'Missing project_id or cu_task_id' });
         }
 
+        const query = `
+            INSERT INTO tasks (project_id, cu_task_id) 
+            VALUES ($1, $2) 
+            RETURNING *;
+        `;
+
         try {
-            // Insert the data into the 'task' table
-            const task = await Task.create({
-                project_id: project_id,
-                cu_task_id: cu_task_id,
-            });
+            const values = [project_id, cu_task_id];
+            const { rows: task } = await pool.query(query, values);
 
             return res.status(201).json({
                 message: 'Data inserted successfully',
-                task
+                task: task[0], // Return the inserted task
             });
         } catch (error) {
             console.error('Error inserting data:', error);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'Internal server error', error: error.message });
         }
     }
 }
