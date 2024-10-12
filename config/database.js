@@ -1,4 +1,3 @@
-// config/database.js
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(
@@ -8,7 +7,13 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
-    dialect: 'postgres'
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true, // This is necessary for SSL connections
+        rejectUnauthorized: false, // This helps with self-signed certificates
+      },
+    },
   }
 );
 

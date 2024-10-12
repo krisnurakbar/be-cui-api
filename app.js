@@ -21,6 +21,16 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
+app.get('/test-db', async (req, res) => {
+    try {
+        await sequelize.authenticate();
+        res.send('Database connection successful!');
+    } catch (error) {
+        res.status(500).send('Database connection failed: ' + error.message);
+    }
+});
+
+
 app.use('/auth', authRoutes);  // Import authRoutes from separate file
 app.use('/users', userRoutes);  // Import userRoutes from separate file
 app.use('/projects', projectRoutes);  // Import projectRoutes from separate file
