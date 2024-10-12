@@ -10,6 +10,7 @@ const taskRoutes = require('./routes/taskRoutes');
 const cuProjectRoutes = require('./routes/api/cuProjectRoutes');
 const sequelize = require('./config/database'); // Ensure sequelize is imported before route definitions
 
+
 // Initialize app
 const app = express();
 
