@@ -21,7 +21,7 @@ class cuProjectController {
 
             if (existingTasks.length > 0) {
                 // If exists, do not insert but update
-                taskDataResponse = await this.fetchAndStoreTaskData(cu_task_id, project_id, existingTasks[0].id);
+                taskDataResponse = await cuProjectController.fetchAndStoreTaskData(cu_task_id, project_id, existingTasks[0].id);
 
                 return res.status(200).json({
                     message: 'Task already exists, data updated successfully',
@@ -38,7 +38,7 @@ class cuProjectController {
                 const values = [project_id, cu_task_id];
                 const { rows: task } = await pool.query(insertQuery, values);
 
-                taskDataResponse = await this.fetchAndStoreTaskData(cu_task_id, project_id, task[0].id);
+                taskDataResponse = await cuProjectController.fetchAndStoreTaskData(cu_task_id, project_id, task[0].id);
 
                 return res.status(201).json({
                     message: 'Data inserted successfully and task data fetched and stored',
