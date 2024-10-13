@@ -10,4 +10,6 @@ const errorHandler = (fn) => (req, res, next) => {
 // Route to handle insertion of a task using query parameters
 router.post('/webhook', errorHandler(cuProjectController.insertTask));
 
+router.get('/fetch-task-data', errorHandler(cuProjectController.fetchAndStoreTaskData));
+
 module.exports = router;
