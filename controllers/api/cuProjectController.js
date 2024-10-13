@@ -108,8 +108,10 @@ class cuProjectController {
         return updatedTask[0]; // Return the updated task data
     } catch (error) {
         console.error('Error fetching or updating task data:', error);
+        console.error('API Response:', error.response ? error.response.data : 'No response data');
         throw new Error('Failed to fetch or update task data');
     }
+
 }
 
 }
