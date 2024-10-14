@@ -60,26 +60,40 @@ class cuProjectController {
     const url = `https://api.clickup.com/api/v2/task/${cu_task_id}`;
     const headers = {
         Authorization: "pk_60846077_JQGXG9DFNVM07G7ET0JCGASAWSO8S2YM",
+        content_type: "application/json",
     };
 
     try {
         const response = await axios.get(url, { headers });
         const data = response.data;
 
+        // Function to convert epoch to ISO string
+        const convertEpochToISO = (epoch) => {
+            return epoch ? new Date(Number(epoch)).toISOString() : null;
+        };
+        
         const taskData = {
             task_title: data.name || null,
-            start_date: data.start_date ? new Date(data.start_date).toISOString() : null,
-            due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
-            actual_start_date: data.actual_start_date ? new Date(data.actual_start_date).toISOString() : null,
-            actual_end_date: data.actual_end_date ? new Date(data.actual_end_date).toISOString() : null,
-            rate_card: data.rate_card || null,
-            plan_cost: data.plan_cost || null,
-            actual_cost: data.actual_cost || null,
-            spi: data.spi || null,
-            cpi: data.cpi || null,
+            start_date: convertEpochToISO(data.start_date), // Convert epoch to ISO
+            due_date: convertEpochToISO(data.due_date), // Convert epoch to ISO
+            actual_start_date: convertEpochToISO(data.custom_fields.find(field => field.name === "Actual Start")?.value), // Custom field
+            actual_end_date: convertEpochToISO(data.custom_fields.find(field => field.name === "Actual End")?.value), // Custom field
+            rate_card: data.custom_fields.find(field => field.name === "Rate Card")?.value || null,
+            plan_cost: data.custom_fields.find(field => field.name === "Plan Cost")?.value || null,
+            actual_cost: data.custom_fields.find(field => field.name === "Actual Cost")?.value || null,
+            spi: data.custom_fields.find(field => field.name === "SPI")?.value || null,
+            cpi: data.custom_fields.find(field => field.name === "CPI")?.value || null,
         };
 
         // Update task data in the tasks table
+        // const updateQuery = `
+        //     UPDATE tasks 
+        //     SET task_title = $1, rate_card = $2, plan_cost = $3, 
+        //          actual_cost = $4, spi = $5, cpi = $6 
+        //     WHERE id = $7 
+        //     RETURNING *;
+        // `;
+
         const updateQuery = `
             UPDATE tasks 
             SET task_title = $1, start_date = $2, due_date = $3, actual_start_date = $4, 
