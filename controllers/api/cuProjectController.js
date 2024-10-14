@@ -83,6 +83,7 @@ class cuProjectController {
             actual_cost: data.custom_fields.find(field => field.name === "Actual Cost")?.value || null,
             spi: data.custom_fields.find(field => field.name === "SPI")?.value || null,
             cpi: data.custom_fields.find(field => field.name === "CPI")?.value || null,
+            task_status: data.status.status || null,
         };
 
         // Update task data in the tasks table
@@ -98,8 +99,8 @@ class cuProjectController {
             UPDATE tasks 
             SET task_title = $1, start_date = $2, due_date = $3, actual_start_date = $4, 
                 actual_end_date = $5, rate_card = $6, plan_cost = $7, 
-                actual_cost = $8, spi = $9, cpi = $10 
-            WHERE id = $11 
+                actual_cost = $8, spi = $9, cpi = $10, task_status = $11
+            WHERE id = $12 
             RETURNING *;
         `;
 
@@ -114,6 +115,7 @@ class cuProjectController {
             taskData.actual_cost,
             taskData.spi,
             taskData.cpi,
+            taskData.task_status,
             taskId // Use the existing task's ID for the update
         ];
 

@@ -18,17 +18,75 @@ exports.listProjects = async (req, res) => {
 
 // Create a new project
 exports.createProject = async (req, res) => {
-    const { project_name, cu_project_id, modified_by } = req.body;
+    const { project_name, cu_project_id, modified_by, start_date, due_date, created_by } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO projects (project_name, cu_project_id, modified_by, created_at, status) VALUES ($1, $2, $3, NOW(), $4) RETURNING *',
-            [project_name, cu_project_id, modified_by, 1] // Defaulting status to 1 (active)
+            'INSERT INTO projects (project_name, cu_project_id, modified_by, created_at, status, start_date, due_date) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING *',
+            [project_name, cu_project_id, modified_by, 1, start_date, due_date]
         );
-        res.status(201).json(result.rows[0]); // Return the newly created project
+
+        const newProject = result.rows[0];
+
+        // Call createProjectProgress and handle it here
+        const progressResult = await exports.createProjectProgress({ 
+            body: { 
+                project_id: newProject.id,
+                start_date: start_date,
+                due_date: due_date,
+                created_by: created_by 
+            } 
+        });
+
+        // Only respond once after both operations complete successfully
+        res.status(201).json({ newProject, progressResult });
+
     } catch (error) {
         handleError(res, 'Error creating project', error);
     }
 };
+
+// Update createProjectProgress
+exports.createProjectProgress = async (req) => {
+    const { project_id, start_date, due_date, created_by } = req.body;
+
+    // Validate input dates
+    if (!start_date || !due_date) {
+        throw new Error('Start date and due date are required');
+    }
+
+    const startDate = new Date(start_date);
+    const dueDate = new Date(due_date);
+
+    if (dueDate <= startDate) {
+        throw new Error('Due date must be after the start date');
+    }
+
+    const duration_weeks = Math.ceil((dueDate - startDate) / (1000 * 60 * 60 * 24 * 7));
+
+    try {
+        const weeks = Array.from({ length: duration_weeks }, (_, i) => i + 1);
+        const queries = weeks.map((week_no) => {
+            const modified_date = new Date();
+            const report_date = new Date(startDate);
+            report_date.setDate(report_date.getDate() + (week_no - 1) * 7);
+
+            return pool.query(
+                `INSERT INTO public.project_progress (project_id, modified_date, week_no, report_date, created_by) 
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [project_id, modified_date, week_no, report_date, created_by]
+            );
+        });
+
+        await Promise.all(queries);
+        return { message: 'Project progress created successfully', duration_weeks };
+
+    } catch (error) {
+        console.error(error);
+        throw new Error('Failed to create project progress');
+    }
+};
+
+
 
 // View a single project by ID
 exports.viewProject = async (req, res) => {
@@ -48,11 +106,20 @@ exports.viewProject = async (req, res) => {
 // Update a project
 exports.updateProject = async (req, res) => {
     const projectId = req.params.id;
-    const { project_name, cu_project_id, modified_by } = req.body;
+    const { project_name, cu_project_id, modified_by, start_date, due_date, status } = req.body; // Include status and other fields
+
     try {
         const result = await pool.query(
-            'UPDATE projects SET project_name = COALESCE($1, project_name), cu_project_id = COALESCE($2, cu_project_id), modified_by = COALESCE($3, modified_by) WHERE id = $4 RETURNING *',
-            [project_name, cu_project_id, modified_by, projectId]
+            `UPDATE projects 
+             SET project_name = COALESCE($1, project_name), 
+                 cu_project_id = COALESCE($2, cu_project_id), 
+                 modified_by = COALESCE($3, modified_by), 
+                 start_date = COALESCE($4, start_date), 
+                 due_date = COALESCE($5, due_date), 
+                 status = COALESCE($6, status) 
+             WHERE id = $7 
+             RETURNING *`,
+            [project_name, cu_project_id, modified_by, start_date, due_date, status, projectId] // Pass all variables including new fields
         );
 
         if (result.rowCount === 0) {
@@ -64,6 +131,7 @@ exports.updateProject = async (req, res) => {
         handleError(res, 'Error updating project', error);
     }
 };
+
 
 // Toggle project status (activate/deactivate)
 exports.toggleProjectStatus = async (req, res) => {
