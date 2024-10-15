@@ -8,7 +8,7 @@ const updateProjectProgressJob = () => {
 
         try {
             // Fetch project progress entries with a specific report date
-            const result = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = SELECT * FROM public.project_progress WHERE report_date = CURRENT_DATE`);
+            const result = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = CURRENT_DATE`);
             const projectProgressUpdates = result.rows;
 
             // Get the current date for comparisons
