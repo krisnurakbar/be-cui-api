@@ -159,7 +159,7 @@ exports.toggleProjectStatus = async (req, res) => {
 };
 
 // Define the cron job (running every minute)
-exports.updateProjectProgressJob = async () => {
+exports.updateProjectProgress = async () => {
     try {
         // Fetch project progress entries with today's report date
         const result = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = CURRENT_DATE`);

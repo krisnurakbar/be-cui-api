@@ -25,6 +25,6 @@ router.patch('/:id/:isActive', (req, res, next) => {
     next();
 }, errorHandler(projectController.toggleProjectStatus));
 
-router.post('update_progress', errorHandler(projectController.updateProjectProgressJob))
+router.post('/update_progress', errorHandler(projectController.updateProjectProgress))
 
 module.exports = router;
