@@ -9,6 +9,7 @@ const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const cuProjectRoutes = require('./routes/api/cuProjectRoutes');
 const pool = require('./config/database'); // Import the connection pool from database.js
+const updateProjectProgressJob = require('./cron/updateProjectProgress');
 
 // Initialize app
 const app = express();
@@ -16,6 +17,9 @@ const app = express();
 // Middleware
 app.use(cors());  // Enable CORS
 app.use(bodyParser.json());  // Parse JSON request bodies
+
+// CRON job
+updateProjectProgressJob();
 
 // Basic route
 app.get('/', (req, res) => {

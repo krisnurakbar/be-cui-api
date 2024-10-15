@@ -20,13 +20,14 @@ const updateProjectProgressJob = () => {
                 if (entry.report_date.toISOString().split('T')[0] === currentDate.toISOString().split('T')[0]) {
                     const spi = await calculateSPI(entry.project_id); // Pass project id for calculation
                     const cpi = await calculateCPI(entry.project_id); // Pass project id for calculation
+                    const actualProgress = await calculateActualProgress(entry.project_id); // Pass project id for calculation
 
                     // Update the entry in the database
                     await pool.query(
                         `UPDATE public.project_progress 
-                         SET spi = $1, cpi = $2, modified_date = NOW() 
-                         WHERE id = $3`,
-                        [spi, cpi, entry.id]
+                         SET spi = $1, cpi = $2, modified_date = NOW(), actual_progress = $3
+                         WHERE id = $4`,
+                        [spi, cpi, actualProgress, entry.id]
                     );
                 }
             }
@@ -58,5 +59,15 @@ const calculateCPI = async (projectId) => {
     );
     return result.rows[0].cpi || 0; // Return average or 0 if null
 };
+
+const calculateActualProgress = async (projectId) => {
+    const result = await pool.query(
+        `SELECT * FROM project_progress_view ppv 
+         WHERE ppv.project_id = $1`, 
+        [projectId]
+    );
+    return result.rows[0].actual_progress || 0; // Return average or 0 if null
+};
+
 
 module.exports = updateProjectProgressJob;

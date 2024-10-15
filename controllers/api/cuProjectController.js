@@ -67,17 +67,17 @@ class cuProjectController {
         const response = await axios.get(url, { headers });
         const data = response.data;
 
-        // Function to convert epoch to ISO string
-        const convertEpochToISO = (epoch) => {
-            return epoch ? new Date(Number(epoch)).toISOString() : null;
+        // Function to convert epoch to date string
+        const convertEpochToDate = (epoch) => {
+            return epoch ? new Date(Number(epoch)).toISOString().split('T')[0] : null;
         };
         
         const taskData = {
             task_title: data.name || null,
-            start_date: convertEpochToISO(data.start_date), // Convert epoch to ISO
-            due_date: convertEpochToISO(data.due_date), // Convert epoch to ISO
-            actual_start_date: convertEpochToISO(data.custom_fields.find(field => field.name === "Actual Start")?.value), // Custom field
-            actual_end_date: convertEpochToISO(data.custom_fields.find(field => field.name === "Actual End")?.value), // Custom field
+            start_date: convertEpochToDate(data.start_date), // Convert epoch to ISO
+            due_date: convertEpochToDate(data.due_date), // Convert epoch to ISO
+            actual_start_date: convertEpochToDate(data.custom_fields.find(field => field.name === "Actual Start")?.value), // Custom field
+            actual_end_date: convertEpochToDate(data.custom_fields.find(field => field.name === "Actual End")?.value), // Custom field
             rate_card: data.custom_fields.find(field => field.name === "Rate Card")?.value || null,
             plan_cost: data.custom_fields.find(field => field.name === "Plan Cost")?.value || null,
             actual_cost: data.custom_fields.find(field => field.name === "Actual Cost")?.value || null,
