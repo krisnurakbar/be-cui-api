@@ -9,7 +9,7 @@ const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const cuProjectRoutes = require('./routes/api/cuProjectRoutes');
 const pool = require('./config/database'); // Import the connection pool from database.js
-const updateProjectProgressJob = require('./cron/updateProjectProgress');
+const updateProjectProgressJob = require('./jobs/updateProjectProgress');
 
 // Initialize app
 const app = express();
