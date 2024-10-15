@@ -16,6 +16,6 @@
     "path": "/jobs/updateProjectProgress",
     "schedule": "1 * * * *"
   }]
-    
+  
 }
   
