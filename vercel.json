@@ -11,11 +11,7 @@
         "src": "/(.*)",
         "dest": "/app.js"
       }
-    ],
-    "crons": [{
-    "path": "/jobs/updateProjectProgress",
-    "schedule": "1 * * * *"
-  }]
+    ]
   
 }
   
