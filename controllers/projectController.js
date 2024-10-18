@@ -161,97 +161,100 @@ exports.toggleProjectStatus = async (req, res) => {
 // Define the cron job (running every minute)
 exports.updateProjectProgress = async () => {
     try {
-        // Fetch project progress entries with today's report date
+        // Fetch project progress data for today
         const result = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = CURRENT_DATE`);
         const projectProgressUpdates = result.rows;
 
-        // Check if there are entries to update
+        // Check if there are updates
         if (projectProgressUpdates.length === 0) {
             console.log('No project progress entries to update for today.');
             return;
         }
 
-        // Prepare promises for calculating SPI, CPI, and actual progress for all relevant entries
-        const updates = projectProgressUpdates.map(async (entry) => {
-            try {
-                const [spi, cpi, actualProgress] = await Promise.all([
-                    calculateSPI(entry.project_id),
-                    calculateCPI(entry.project_id),
-                    calculateActualProgress(entry.project_id)
-                ]);
+        // Prepare promises for calculating metrics from the view
+        const metricsPromises = projectProgressUpdates.map((entry) =>
+            pool.query('SELECT spi, cpi, actual_progress FROM public.project_progress_view WHERE project_id = $1', [entry.project_id])
+        );
 
-                return {
-                    id: entry.id,
-                    spi,
-                    cpi,
-                    actualProgress
-                };
-            } catch (error) {
-                console.error(`Error calculating metrics for project ID ${entry.project_id}:`, error);
-                return null; // Return null if there's an error calculating metrics
-            }
-        });
+        const metricsResults = await Promise.all(metricsPromises);
+        const updates = metricsResults.map((res, index) => ({
+            id: projectProgressUpdates[index].id,
+            spi: res.rows[0]?.spi || 0,
+            cpi: res.rows[0]?.cpi || 0,
+            actualProgress: res.rows[0]?.actual_progress || 0
+        }));
 
         // Filter out any null updates in case of calculation errors
-        const validUpdates = (await Promise.all(updates)).filter(update => update !== null);
+        const validUpdates = updates.filter(update => update.spi !== null);
 
-        // Update the database for all valid updates in a single operation if possible
         if (validUpdates.length > 0) {
-            const updateQueries = validUpdates.map((update) => {
-                return pool.query(
+            const updateQueries = validUpdates.map(update =>
+                pool.query(
                     `UPDATE public.project_progress 
-                    SET spi = $1, cpi = $2, modified_date = NOW(), actual_progress = $3
-                    WHERE id = $4`,
+                     SET spi = $1, cpi = $2, modified_date = NOW(), actual_progress = $3
+                     WHERE id = $4`,
                     [update.spi, update.cpi, update.actualProgress, update.id]
-                );
-            });
+                )
+            );
 
-            try {
-                // Execute all update queries concurrently
-                await Promise.all(updateQueries);
-                console.log('Project progress updated successfully.');
-            } catch (error) {
-                console.error('Error during project progress updates:', error);
-                // Adding specific logic based on error type if necessary
-            }
+            await Promise.all(updateQueries);
+            console.log('Project progress updated successfully.');
         } else {
             console.log('No valid updates to process.');
         }
-
     } catch (error) {
         console.error('Failed to update project progress:', error);
     }
 };
 
+// Get project progress by project ID
+exports.getProjectProgressById = async (req, res) => {
+    const projectId = req.params.id; // Get the project ID from the request parameters
+    try {
+        const result = await pool.query(
+            `SELECT * FROM public.project_progress WHERE project_id = $1`,
+            [projectId]
+        );
 
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'No progress found for this project ID' });
+        }
 
-// Calculate SPI using the average from tasks table
-const calculateSPI = async (projectId) => {
-    const result = await pool.query(
-        `SELECT AVG(a.spi) as spi 
-         FROM tasks a 
-         WHERE a.project_id = $1`, 
-        [projectId]
-    );
-    return result.rows[0].spi || 0; // Return average or 0 if null
+        res.status(200).json(result.rows); // Send the retrieved progress data
+    } catch (error) {
+        handleError(res, 'Error retrieving project progress', error);
+    }
 };
 
-// Calculate CPI using the average from tasks table
-const calculateCPI = async (projectId) => {
-    const result = await pool.query(
-        `SELECT AVG(a.cpi) as cpi 
-         FROM tasks a 
-         WHERE a.project_id = $1`, 
-        [projectId]
-    );
-    return result.rows[0].cpi || 0; // Return average or 0 if null
-};
 
-const calculateActualProgress = async (projectId) => {
-    const result = await pool.query(
-        `SELECT * FROM project_progress_view ppv 
-         WHERE ppv.project_id = $1`, 
-        [projectId]
-    );
-    return result.rows[0].actual_progress || 0; // Return average or 0 if null
-};
+
+// // Calculate SPI using the average from tasks table
+// const calculateSPI = async (projectId) => {
+//     const result = await pool.query(
+//         `SELECT AVG(a.spi) as spi 
+//          FROM tasks a 
+//          WHERE a.project_id = $1`, 
+//         [projectId]
+//     );
+//     return result.rows[0].spi || 0; // Return average or 0 if null
+// };
+
+// // Calculate CPI using the average from tasks table
+// const calculateCPI = async (projectId) => {
+//     const result = await pool.query(
+//         `SELECT AVG(a.cpi) as cpi 
+//          FROM tasks a 
+//          WHERE a.project_id = $1`, 
+//         [projectId]
+//     );
+//     return result.rows[0].cpi || 0; // Return average or 0 if null
+// };
+
+// const calculateActualProgress = async (projectId) => {
+//     const result = await pool.query(
+//         `SELECT * FROM project_progress_view ppv 
+//          WHERE ppv.project_id = $1`, 
+//         [projectId]
+//     );
+//     return result.rows[0].actual_progress || 0; // Return average or 0 if null
+// };

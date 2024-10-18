@@ -27,4 +27,7 @@ router.patch('/:id/:isActive', (req, res, next) => {
 
 router.post('/update_progress', errorHandler(projectController.updateProjectProgress))
 
+// Get progress by project ID
+router.get('/:id/progress', errorHandler(projectController.getProjectProgressById));
+
 module.exports = router;
