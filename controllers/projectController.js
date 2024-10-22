@@ -1,4 +1,5 @@
 const pool = require('../config/database'); // Import the pg connection pool
+const cuProjectController = require('./api/cuProjectController'); // Import the CU project controller
 
 // Utility function to handle errors
 const handleError = (res, message, error) => {
@@ -159,7 +160,7 @@ exports.toggleProjectStatus = async (req, res) => {
 };
 
 // Define the cron job (running every minute)
-exports.updateProjectProgress = async () => {
+exports.updateProjectProgress = async (req, res) => {
     try {
         // Fetch project progress data for today
         const result = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = CURRENT_DATE`);
@@ -171,39 +172,33 @@ exports.updateProjectProgress = async () => {
             return;
         }
 
-        // Prepare promises for calculating metrics from the view
-        const metricsPromises = projectProgressUpdates.map((entry) =>
-            pool.query('SELECT spi, cpi, actual_progress FROM public.project_progress_view WHERE project_id = $1', [entry.project_id])
+        const projectIds = projectProgressUpdates.map(entry => entry.project_id);
+        const metricsResult = await pool.query(
+            `SELECT project_id, spi, cpi, actual_progress FROM public.project_progress_view WHERE project_id = ANY($1)`,
+            [projectIds]
         );
 
-        const metricsResults = await Promise.all(metricsPromises);
-        const updates = metricsResults.map((res, index) => ({
-            id: projectProgressUpdates[index].id,
-            spi: res.rows[0]?.spi || 0,
-            cpi: res.rows[0]?.cpi || 0,
-            actualProgress: res.rows[0]?.actual_progress || 0
+        const updates = metricsResult.rows.map(row => ({
+            id: projectProgressUpdates.find(entry => entry.project_id === row.project_id).id,
+            spi: row.spi || 0,
+            cpi: row.cpi || 0,
+            actualProgress: row.actual_progress || 0
         }));
 
-        // Filter out any null updates in case of calculation errors
-        const validUpdates = updates.filter(update => update.spi !== null);
-
-        if (validUpdates.length > 0) {
-            const updateQueries = validUpdates.map(update =>
-                pool.query(
-                    `UPDATE public.project_progress 
-                     SET spi = $1, cpi = $2, modified_date = NOW(), actual_progress = $3
-                     WHERE id = $4`,
-                    [update.spi, update.cpi, update.actualProgress, update.id]
-                )
+        for (const update of updates) {
+            await pool.query(
+                `UPDATE public.project_progress 
+                 SET spi = $1, cpi = $2, modified_date = NOW(), actual_progress = $3
+                 WHERE id = $4`,
+                [update.spi, update.cpi, update.actualProgress, update.id]
             );
-
-            await Promise.all(updateQueries);
-            console.log('Project progress updated successfully.');
-        } else {
-            console.log('No valid updates to process.');
         }
+
+        console.log('Project progress updated successfully.');
+        res.status(200).json({ message: 'Project progress updated successfully.' });
     } catch (error) {
         console.error('Failed to update project progress:', error);
+        res.status(500).json({ message: 'Failed to update project progress', error: error.message });
     }
 };
 
@@ -225,6 +220,51 @@ exports.getProjectProgressById = async (req, res) => {
         handleError(res, 'Error retrieving project progress', error);
     }
 };
+
+exports.syncTasksData = async (req, res) => {
+    const timezone = 'Asia/Jakarta'; // Set default timezone to Indonesia (Jakarta)
+    const currentDate = new Date().toLocaleString('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+    const { rows: projects } = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = $1`, [currentDate]);
+
+    if (projects.length > 0) {
+        const projectIds = projects.map(project => project.project_id);
+        const tasks = await pool.query(`SELECT * FROM tasks WHERE project_id = ANY($1)`, [projectIds]);
+        const taskList = tasks.rows;
+        const totalTasks = taskList.length;
+
+        const syncTask = async (task) => {
+            try {
+                await cuProjectController.fetchAndStoreTaskData(task.cu_task_id, task.project_id, task.id);
+                console.log(`Task synced: ${task.task_title}`);
+            } catch (error) {
+                console.error(`Error syncing task ${task.name}: ${error.message}`);
+            }
+        };
+
+        for (let index = 0; index < totalTasks; index++) {
+            await syncTask(taskList[index]);
+            console.log(`Task ${index + 1} of ${totalTasks} synced: ${taskList[index].task_title}`);
+        }
+
+        console.log('Tasks synced successfully.');
+
+        // Call the updateProjectProgress function
+        try {
+            const response = await exports.updateProjectProgress(req, res);
+            console.log('updateProjectProgress response:', response);
+        } catch (error) {
+            console.error('Error updating project progress:', error);
+        }
+
+        //res.status(200).json({ message: 'Tasks synced successfully.' });
+
+        
+    } else {
+        console.log('No projects found for today. currentDate:', currentDate);
+        error(res, 'No projects found for today.');
+    }
+};
+
 
 
 

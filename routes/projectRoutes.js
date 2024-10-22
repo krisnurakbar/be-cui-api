@@ -26,6 +26,7 @@ router.patch('/:id/:isActive', (req, res, next) => {
 }, errorHandler(projectController.toggleProjectStatus));
 
 router.post('/update_progress', errorHandler(projectController.updateProjectProgress))
+router.post('/sync_tasks', errorHandler(projectController.syncTasksData))
 
 // Get progress by project ID
 router.get('/:id/progress', errorHandler(projectController.getProjectProgressById));
