@@ -10,6 +10,7 @@ const taskRoutes = require('./routes/taskRoutes');
 const cuProjectRoutes = require('./routes/api/cuProjectRoutes');
 const pool = require('./config/database'); // Import the connection pool from database.js
 const updateProjectProgressJob = require('./jobs/updateProjectProgress');
+const syncDataProgressJob = require('./jobs/syncDataProgress');
 
 // Initialize app
 const app = express();
@@ -20,6 +21,7 @@ app.use(bodyParser.json());  // Parse JSON request bodies
 
 // CRON job
 updateProjectProgressJob();
+syncDataProgressJob();
 
 // Basic route
 app.get('/', (req, res) => {
