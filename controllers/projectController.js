@@ -265,6 +265,63 @@ exports.syncTasksData = async (req, res) => {
     }
 };
 
+exports.calculatePlanProgress = async (req, res) => {
+  const project_id = req.params.id; // Get the project ID from the request parameters
+  try {
+    // 1. Fetch all the progress records for the project
+    const progressRecords = await pool.query(`
+      SELECT id, project_id, report_date
+      FROM project_progress
+      WHERE project_id = $1   
+    `, [project_id]);
+
+    // Loop through each progress record and update the plan_progress
+    for (const progress of progressRecords.rows) {
+      const { id, project_id, report_date } = progress;
+
+      // 2. Fetch total tasks for the project up to the report_date
+      const totalTasksResult = await pool.query(`
+        SELECT COUNT(*)
+        FROM tasks
+        WHERE project_id = $1
+      `, [project_id]);
+
+      const totalTasks = parseInt(totalTasksResult.rows[0].count, 10);
+
+      // 3. Fetch completed tasks for the project up to the report_date
+      const completedTasksResult = await pool.query(`
+        SELECT COUNT(*)
+        FROM tasks
+        WHERE project_id = $1
+        AND due_date <= $2
+        AND status = 1
+      `, [project_id, report_date]);
+
+      const completedTasks = parseInt(completedTasksResult.rows[0].count, 10);
+
+      // 4. Calculate the plan progress
+      let planProgress = 0;
+      if (totalTasks > 0) {
+        planProgress = (completedTasks / totalTasks) * 100;
+      }
+
+      // 5. Update the plan_progress for the current report_date
+      await pool.query(`
+        UPDATE project_progress
+        SET plan_progress = $1
+        WHERE id = $2
+      `, [planProgress, id]);
+
+      console.log(`Updated plan progress for report_date ${report_date}: ${planProgress}%`);
+    }
+
+    res.status(200).json({ message: 'Plan progress updated successfully' });
+  } catch (error) {
+    console.error('Error updating plan progress:', error);
+    res.status(500).json({ message: 'Error updating plan progress', error: error.message });
+  }
+};
+
 
 
 

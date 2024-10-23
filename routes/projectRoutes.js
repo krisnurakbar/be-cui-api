@@ -31,4 +31,7 @@ router.post('/sync_tasks', errorHandler(projectController.syncTasksData))
 // Get progress by project ID
 router.get('/:id/progress', errorHandler(projectController.getProjectProgressById));
 
+// Get plan progress by project ID
+router.get('/:id/plan-progress', errorHandler(projectController.calculatePlanProgress));
+
 module.exports = router;

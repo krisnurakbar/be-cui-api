@@ -25,7 +25,7 @@ syncDataProgressJob();
 
 // Basic route
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.send('Hiii World!');
 });
 
 // Database connection testing route
