@@ -1,6 +1,7 @@
 const pool = require('../config/database'); // Import the pg connection pool
 const cuProjectController = require('./api/cuProjectController'); // Import the CU project controller
 
+
 // Utility function to handle errors
 const handleError = (res, message, error) => {
     console.error(error); // Log the error for debugging
@@ -322,9 +323,35 @@ exports.calculatePlanProgress = async (req, res) => {
   }
 };
 
-
-
-
+exports.syncTasksDataManual = async (req, res) => {
+    const project_id = req.params.id;
+    const tasks = await pool.query(`SELECT * FROM tasks WHERE project_id = $1`, [project_id]);
+  
+    const totalTasks = tasks.rows.length;
+    let completedTasks = 0;
+  
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+    });
+  
+    // Send initial progress update
+    res.write(`data: ${completedTasks}/${totalTasks}\n\n`);
+  
+    for (const task of tasks.rows) {
+      try {
+        await cuProjectController.fetchAndStoreTaskData(task.cu_task_id, task.project_id, task.id);
+        completedTasks++;
+        // Send progress update
+        res.write(`data: ${completedTasks}/${totalTasks}\n\n`);
+        console.log(`Task synced: ${task.task_title}-${completedTasks}/${totalTasks}`);
+      } catch (error) {
+        console.error(`Error syncing task ${task.id}:`, error);
+      }
+    }
+  
+    res.end();
+  };
 // // Calculate SPI using the average from tasks table
 // const calculateSPI = async (projectId) => {
 //     const result = await pool.query(
