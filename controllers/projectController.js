@@ -208,7 +208,23 @@ exports.getProjectProgressById = async (req, res) => {
     const projectId = req.params.id; // Get the project ID from the request parameters
     try {
         const result = await pool.query(
-            `SELECT * FROM public.project_progress WHERE project_id = $1`,
+            `SELECT 
+                id,
+                project_id,
+                TO_CHAR(modified_date, 'YYYY-MM-DD') AS modified_date,
+                week_no,
+                TO_CHAR(report_date, 'YYYY-MM-DD') AS report_date,
+                TO_CHAR(ROUND(CAST(plan_progress AS NUMERIC), 2), 'FM999990.00') || ' %' AS plan_progress,
+                actual_progress || ' %' AS actual_progress,
+                plan_cost,
+                actual_cost,
+                spi,
+                cpi,
+                created_by
+                FROM 
+                public.project_progress
+            WHERE project_id = $1 
+            order by week_no asc`,
             [projectId]
         );
 
