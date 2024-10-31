@@ -1,5 +1,11 @@
 const pool = require('../config/database'); // Import the pg connection pool
 const cuProjectController = require('./api/cuProjectController'); // Import the CU project controller
+const { Redis } = require('@upstash/redis');
+
+const redis = new Redis({
+    url: 'https://top-aardvark-24334.upstash.io',
+    token: 'AV8OAAIjcDFlMDY4NDkxNzVlMzE0NTM2ODg2YmVkM2Q3ZDk0NTgxOHAxMA',
+  });
 
 
 // Utility function to handle errors
@@ -238,49 +244,81 @@ exports.getProjectProgressById = async (req, res) => {
     }
 };
 
+
 exports.syncTasksData = async (req, res) => {
-    const timezone = 'Asia/Jakarta'; // Set default timezone to Indonesia (Jakarta)
-    const currentDate = new Date().toLocaleString('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
-    const { rows: projects } = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = $1`, [currentDate]);
+    const moment = require('moment-timezone');
+    const currentDate = moment().tz('Asia/Jakarta').format('YYYY/MM/DD');    
+    const { rows: projects } = await pool.query(
+        `SELECT * FROM public.project_progress WHERE TO_CHAR(report_date, 'YYYY/MM/DD') = $1`, 
+        [currentDate]
+    );
+    console.log(currentDate);
 
     if (projects.length > 0) {
         const projectIds = projects.map(project => project.project_id);
         const tasks = await pool.query(`SELECT * FROM tasks WHERE project_id = ANY($1)`, [projectIds]);
         const taskList = tasks.rows;
-        const totalTasks = taskList.length;
 
-        const syncTask = async (task) => {
+        // Add tasks to the Upstash Redis Queue
+        await Promise.all(taskList.map(async (task) => {
             try {
-                await cuProjectController.fetchAndStoreTaskData(task.cu_task_id, task.project_id, task.id);
-                console.log(`Task synced: ${task.task_title}`);
+                await redis.rpush('sync-tasks', JSON.stringify(task));
+                console.log(`Task ${task.task_title} added to queue.`);
             } catch (error) {
-                console.error(`Error syncing task ${task.name}: ${error.message}`);
+                console.error(`Error adding task ${task.task_title} to queue: ${error.message}`);
             }
-        };
+        }));
 
-        for (let index = 0; index < totalTasks; index++) {
-            await syncTask(taskList[index]);
-            console.log(`Task ${index + 1} of ${totalTasks} synced: ${taskList[index].task_title}`);
-        }
-
-        console.log('Tasks synced successfully.');
-
-        // Call the updateProjectProgress function
-        try {
-            const response = await exports.updateProjectProgress(req, res);
-            console.log('updateProjectProgress response:', response);
-        } catch (error) {
-            console.error('Error updating project progress:', error);
-        }
-
-        //res.status(200).json({ message: 'Tasks synced successfully.' });
-
-        
+        res.status(200).json({ message: 'Tasks added to queue' });
     } else {
         console.log('No projects found for today. currentDate:', currentDate);
-        error(res, 'No projects found for today.');
+        res.status(404).json({ message: 'No projects found for today.' });
     }
 };
+
+// exports.syncTasksData = async (req, res) => {
+//     const timezone = 'Asia/Jakarta'; // Set default timezone to Indonesia (Jakarta)
+//     const currentDate = new Date().toLocaleString('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+//     const { rows: projects } = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = $1`, [currentDate]);
+
+//     if (projects.length > 0) {
+//         const projectIds = projects.map(project => project.project_id);
+//         const tasks = await pool.query(`SELECT * FROM tasks WHERE project_id = ANY($1)`, [projectIds]);
+//         const taskList = tasks.rows;
+//         const totalTasks = taskList.length;
+
+//         const syncTask = async (task) => {
+//             try {
+//                 await cuProjectController.fetchAndStoreTaskData(task.cu_task_id, task.project_id, task.id);
+//                 console.log(`Task synced: ${task.task_title}`);
+//             } catch (error) {
+//                 console.error(`Error syncing task ${task.name}: ${error.message}`);
+//             }
+//         };
+
+//         for (let index = 0; index < totalTasks; index++) {
+//             await syncTask(taskList[index]);
+//             console.log(`Task ${index + 1} of ${totalTasks} synced: ${taskList[index].task_title}`);
+//         }
+
+//         console.log('Tasks synced successfully.');
+
+//         // Call the updateProjectProgress function
+//         try {
+//             const response = await exports.updateProjectProgress(req, res);
+//             console.log('updateProjectProgress response:', response);
+//         } catch (error) {
+//             console.error('Error updating project progress:', error);
+//         }
+
+//         //res.status(200).json({ message: 'Tasks synced successfully.' });
+
+        
+//     } else {
+//         console.log('No projects found for today. currentDate:', currentDate);
+//         error(res, 'No projects found for today.');
+//     }
+// };
 
 exports.calculatePlanProgress = async (req, res) => {
   const project_id = req.params.id; // Get the project ID from the request parameters
@@ -342,32 +380,32 @@ exports.calculatePlanProgress = async (req, res) => {
 exports.syncTasksDataManual = async (req, res) => {
     const project_id = req.params.id;
     const tasks = await pool.query(`SELECT * FROM tasks WHERE project_id = $1`, [project_id]);
-  
+
     const totalTasks = tasks.rows.length;
     let completedTasks = 0;
-  
+
     res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
     });
-  
+
     // Send initial progress update
     res.write(`data: ${completedTasks}/${totalTasks}\n\n`);
-  
+
     for (const task of tasks.rows) {
-      try {
-        await cuProjectController.fetchAndStoreTaskData(task.cu_task_id, task.project_id, task.id);
-        completedTasks++;
-        // Send progress update
-        res.write(`data: ${completedTasks}/${totalTasks}\n\n`);
-        console.log(`Task synced: ${task.task_title}-${completedTasks}/${totalTasks}`);
-      } catch (error) {
-        console.error(`Error syncing task ${task.id}:`, error);
-      }
+        try {
+            await redis.rpush('sync-tasks', JSON.stringify(task));
+            completedTasks++;
+            // Send progress update
+            res.write(`data: ${completedTasks}/${totalTasks}\n\n`);
+            console.log(`Task ${task.task_title} added to queue - ${completedTasks}/${totalTasks}`);
+        } catch (error) {
+            console.error(`Error adding task ${task.id} to queue:`, error);
+        }
     }
-  
+
     res.end();
-  };
+};
 // // Calculate SPI using the average from tasks table
 // const calculateSPI = async (projectId) => {
 //     const result = await pool.query(
