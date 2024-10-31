@@ -392,7 +392,8 @@ exports.syncTasksDataManual = async (req, res) => {
     // Send initial progress update
     res.write(`data: ${completedTasks}/${totalTasks}\n\n`);
 
-    for (const task of tasks.rows) {
+    // Use Promise.all to execute the tasks in parallel, to lower the execution time
+    await Promise.all(tasks.rows.map(async (task) => {
         try {
             await redis.rpush('sync-tasks', JSON.stringify(task));
             completedTasks++;
@@ -402,7 +403,7 @@ exports.syncTasksDataManual = async (req, res) => {
         } catch (error) {
             console.error(`Error adding task ${task.id} to queue:`, error);
         }
-    }
+    }));
 
     res.end();
 };
