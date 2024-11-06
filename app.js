@@ -6,11 +6,13 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
+const projectProgressRoutes = require('./routes/projectProgressRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const cuProjectRoutes = require('./routes/api/cuProjectRoutes');
 const pool = require('./config/database'); // Import the connection pool from database.js
 const updateProjectProgressJob = require('./jobs/updateProjectProgress');
 const syncDataProgressJob = require('./jobs/syncDataProgress');
+
 
 // Initialize app
 const app = express();
@@ -18,10 +20,6 @@ const app = express();
 // Middleware
 app.use(cors());  // Enable CORS
 app.use(bodyParser.json());  // Parse JSON request bodies
-
-// CRON job
-updateProjectProgressJob();
-syncDataProgressJob();
 
 // Basic route
 app.get('/', (req, res) => {
@@ -44,6 +42,7 @@ app.get('/test-db', async (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/projects', projectRoutes);
+app.use('/project/progress', projectProgressRoutes);
 app.use('/tasks', taskRoutes);
 app.use('/api/task', cuProjectRoutes);
 
