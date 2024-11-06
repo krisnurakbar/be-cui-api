@@ -19,7 +19,7 @@ exports.create = async (req, res) => {
         // Create a new user
         const newUserResult = await pool.query(
             'INSERT INTO users (email, password_hash, role, status, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING *',
-            [email, hashedPassword, role || 'user', 1] // Set status as 1 (active)
+            [email, hashedPassword, role || 'user', 0] // Set status as 1 (active)
         );
 
         // Response
@@ -46,6 +46,11 @@ exports.login = async (req, res) => {
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if the user is active
+        if (user.status !== 1) {
+            return res.status(401).json({ message: 'User is not active' });
         }
 
         // Check password
