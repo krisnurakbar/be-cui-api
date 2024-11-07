@@ -8,13 +8,13 @@ const handleError = (res, message, error) => {
 
 //create a new project progress
 exports.createProjectProgress = async (req, res) => {
-  const { project_id, week_no, report_date, plan_progress, actual_progress, plan_cost, actual_cost, spi, cpi, created_by } = req.body;
+  const { project_id, week_no, report_date, plan_progress, actual_progress, plan_cost, actual_cost, spi, cpi, created_by, plan_value, actual_value } = req.body;
 
   try {
     const result = await pool.query(
-      `INSERT INTO project_progress (project_id, week_no, report_date, plan_progress, actual_progress, plan_cost, actual_cost, spi, cpi, created_by) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [project_id, week_no, report_date, plan_progress, actual_progress, plan_cost, actual_cost, spi, cpi, created_by]
+      `INSERT INTO project_progress (project_id, week_no, report_date, plan_progress, actual_progress, plan_cost, actual_cost, spi, cpi, created_by, plan_value, actual_value) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [project_id, week_no, report_date, plan_progress, actual_progress, plan_cost, actual_cost, spi, cpi, created_by, plan_value, actual_value]
     );
     // response for debug
     // res.status(201).json(result.rows[0]);
@@ -26,7 +26,7 @@ exports.createProjectProgress = async (req, res) => {
 };
 
 exports.updateProjectProgress = async (req, res) => {
-  const { id, project_id, week_no, report_date, plan_progress, actual_progress, plan_cost, actual_cost, spi, cpi, created_by } = req.body;
+  const { id, project_id, week_no, report_date, plan_progress, actual_progress, plan_cost, actual_cost, spi, cpi, created_by, plan_value, actual_value } = req.body;
 
   // Validate numeric fields
   const validateNumber = (value) => {
@@ -37,8 +37,8 @@ exports.updateProjectProgress = async (req, res) => {
     const result = await pool.query(
       `UPDATE project_progress 
        SET project_id = $1, week_no = $2, report_date = $3, plan_progress = $4, actual_progress = $5, 
-       plan_cost = $6, actual_cost = $7, spi = $8, cpi = $9, created_by = $10 
-       WHERE id = $11 RETURNING *`,
+       plan_cost = $6, actual_cost = $7, spi = $8, cpi = $9, created_by = $10, plan_value = $11, actual_value = $12 
+       WHERE id = $13 RETURNING *`,
       [
         project_id,
         week_no,
@@ -50,6 +50,8 @@ exports.updateProjectProgress = async (req, res) => {
         validateNumber(spi),
         validateNumber(cpi),
         created_by,
+        validateNumber(plan_value),
+        validateNumber(actual_value),
         id
       ]
     );
