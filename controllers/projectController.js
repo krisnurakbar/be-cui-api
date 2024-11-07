@@ -230,6 +230,8 @@ exports.getProjectProgressById = async (req, res) => {
                 actual_progress || ' %' AS actual_progress,
                 plan_cost,
                 actual_cost,
+                plan_value,
+                actual_value,
                 spi,
                 cpi,
                 created_by
