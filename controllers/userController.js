@@ -5,7 +5,10 @@ class UserController {
     async listUsers(req, res) {
         try {
             const { rows: users } = await pool.query('SELECT * FROM users'); // Adjust this to your actual users table name
-            res.status(200).json(users);
+            // ressponse for debug
+            // res.status(200).json(users);
+            // response for secure
+            res.status(200).json({ message: 'Users retrieved successfully' });
         } catch (error) {
             res.status(500).json({ message: 'Error retrieving users', error: error.message });
         }
@@ -30,8 +33,10 @@ class UserController {
             if (rowCount === 0) {
                 return res.status(404).json({ message: 'User not found' });
             }
-
-            res.status(200).json({ message: 'User status updated', user: updatedUsers[0] });
+            // response for debug
+            // res.status(200).json({ message: 'User status updated', user: updatedUsers[0] });
+            // response for secure
+            res.status(200).json({ message: 'User status updated' });
         } catch (error) {
             res.status(500).json({ message: 'Error updating user status', error: error.message });
         }

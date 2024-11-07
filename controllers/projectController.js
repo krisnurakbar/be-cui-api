@@ -18,7 +18,11 @@ const handleError = (res, message, error) => {
 exports.listProjects = async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM projects'); // Fetch all projects
-        res.status(200).json(result.rows); // Send the retrieved rows
+        //debug response
+        //res.status(200).json(result.rows); // Send the retrieved rows
+        
+        //secure response
+        res.status(200).json({ message: 'Projects retrieved successfully' });
     } catch (error) {
         handleError(res, 'Error retrieving projects', error);
     }
@@ -46,8 +50,10 @@ exports.createProject = async (req, res) => {
         });
 
         // Only respond once after both operations complete successfully
-        res.status(201).json({ newProject, progressResult });
-
+        //res.status(201).json({ newProject, progressResult });
+        
+        // secure response
+        res.status(201).json({ message: 'Project created successfully' });
     } catch (error) {
         handleError(res, 'Error creating project', error);
     }
@@ -159,7 +165,7 @@ exports.toggleProjectStatus = async (req, res) => {
             return res.status(404).json({ message: 'Project not found' });
         }
 
-        res.status(200).json({ message: 'Project status updated', project: result.rows[0] });
+        res.status(200).json({ message: 'Project status updated'});
     } catch (error) {
         console.error('Error updating project status:', error);
         res.status(500).json({ message: 'Error updating project status', error: error.message });
@@ -276,50 +282,6 @@ exports.syncTasksData = async (req, res) => {
     }
 };
 
-// exports.syncTasksData = async (req, res) => {
-//     const timezone = 'Asia/Jakarta'; // Set default timezone to Indonesia (Jakarta)
-//     const currentDate = new Date().toLocaleString('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
-//     const { rows: projects } = await pool.query(`SELECT * FROM public.project_progress WHERE report_date = $1`, [currentDate]);
-
-//     if (projects.length > 0) {
-//         const projectIds = projects.map(project => project.project_id);
-//         const tasks = await pool.query(`SELECT * FROM tasks WHERE project_id = ANY($1)`, [projectIds]);
-//         const taskList = tasks.rows;
-//         const totalTasks = taskList.length;
-
-//         const syncTask = async (task) => {
-//             try {
-//                 await cuProjectController.fetchAndStoreTaskData(task.cu_task_id, task.project_id, task.id);
-//                 console.log(`Task synced: ${task.task_title}`);
-//             } catch (error) {
-//                 console.error(`Error syncing task ${task.name}: ${error.message}`);
-//             }
-//         };
-
-//         for (let index = 0; index < totalTasks; index++) {
-//             await syncTask(taskList[index]);
-//             console.log(`Task ${index + 1} of ${totalTasks} synced: ${taskList[index].task_title}`);
-//         }
-
-//         console.log('Tasks synced successfully.');
-
-//         // Call the updateProjectProgress function
-//         try {
-//             const response = await exports.updateProjectProgress(req, res);
-//             console.log('updateProjectProgress response:', response);
-//         } catch (error) {
-//             console.error('Error updating project progress:', error);
-//         }
-
-//         //res.status(200).json({ message: 'Tasks synced successfully.' });
-
-        
-//     } else {
-//         console.log('No projects found for today. currentDate:', currentDate);
-//         error(res, 'No projects found for today.');
-//     }
-// };
-
 exports.calculatePlanProgress = async (req, res) => {
   const project_id = req.params.id; // Get the project ID from the request parameters
   try {
@@ -407,33 +369,3 @@ exports.syncTasksDataManual = async (req, res) => {
 
     res.end();
 };
-// // Calculate SPI using the average from tasks table
-// const calculateSPI = async (projectId) => {
-//     const result = await pool.query(
-//         `SELECT AVG(a.spi) as spi 
-//          FROM tasks a 
-//          WHERE a.project_id = $1`, 
-//         [projectId]
-//     );
-//     return result.rows[0].spi || 0; // Return average or 0 if null
-// };
-
-// // Calculate CPI using the average from tasks table
-// const calculateCPI = async (projectId) => {
-//     const result = await pool.query(
-//         `SELECT AVG(a.cpi) as cpi 
-//          FROM tasks a 
-//          WHERE a.project_id = $1`, 
-//         [projectId]
-//     );
-//     return result.rows[0].cpi || 0; // Return average or 0 if null
-// };
-
-// const calculateActualProgress = async (projectId) => {
-//     const result = await pool.query(
-//         `SELECT * FROM project_progress_view ppv 
-//          WHERE ppv.project_id = $1`, 
-//         [projectId]
-//     );
-//     return result.rows[0].actual_progress || 0; // Return average or 0 if null
-// };
