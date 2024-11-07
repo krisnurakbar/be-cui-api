@@ -22,13 +22,14 @@ exports.create = async (req, res) => {
             [email, hashedPassword, role || 'user', 0] // Set status as 1 (active)
         );
 
-        // Response
-        const newUser = newUserResult.rows[0]; // Get the inserted user
-        res.status(201).json({
-            id: newUser.id,
-            email: newUser.email,
-            role: newUser.role
-        });
+        // Response for debug
+        // const newUser = newUserResult.rows[0]; // Get the inserted user
+        // res.status(201).json({
+        //     id: newUser.id,
+        //     email: newUser.email,
+        //     role: newUser.role
+        // });
+        res.status(201).json({ message: 'User created successfully' });
     } catch (error) {
         console.error('Error during registration:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -65,15 +66,18 @@ exports.login = async (req, res) => {
         });
 
         // Response
-        res.status(200).json({
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            token: token
-        });
+        // res.status(200).json({
+        //     id: user.id,
+        //     email: user.email,
+        //     role: user.role,
+        //     token: token
+        // });
+        res.status(200).json({ message: 'Logged in successfully', token: token });
     } catch (error) {
         console.error('Error during login:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+
 

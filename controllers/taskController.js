@@ -4,7 +4,10 @@ const pool = require('../config/database'); // Import the pg connection pool
 exports.listTasks = async (req, res) => {
     try {
         const { rows: tasks } = await pool.query('SELECT * FROM tasks'); // Replace 'tasks' with your actual table name
-        res.status(200).json(tasks);
+        // response for debug
+        // res.status(200).json(tasks);
+        // response for secure
+        res.status(200).json({ message: 'Tasks retrieved successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error retrieving tasks', error });
     }
@@ -24,8 +27,10 @@ exports.listProjectTasks = async (req, res) => {
         if (tasks.length === 0) {
             return res.status(404).json({ message: 'No tasks found for the given project_id' });
         }
-
-        res.status(200).json(tasks);
+        // response for debug
+        // res.status(200).json(tasks);
+        // response for secure
+        res.status(200).json({ message: 'Tasks retrieved successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error retrieving tasks', error });
     }
@@ -44,7 +49,10 @@ exports.createTask = async (req, res) => {
     try {
         const values = [project_id, cu_task_id, task_title, start_date, due_date, actual_start_date, actual_end_date, rate_card, plan_cost, actual_cost, spi, cpi, status];
         const { rows: newTask } = await pool.query(query, values);
-        res.status(201).json(newTask[0]);
+        // response for debug
+        // res.status(201).json(newTask[0]);
+        // response for secure
+        res.status(201).json({ message: 'Task created successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error creating task', error });
     }
@@ -59,7 +67,10 @@ exports.viewTask = async (req, res) => {
         if (task.length === 0) {
             return res.status(404).json({ message: 'Task not found' });
         }
-        res.status(200).json(task[0]);
+        // response for debug
+        // res.status(200).json(task[0]);
+        // response for secure
+        res.status(200).json({ message: 'Task retrieved successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error retrieving task', error });
     }
@@ -96,8 +107,10 @@ exports.updateTask = async (req, res) => {
         if (rowCount === 0) {
             return res.status(404).json({ message: 'Task not found' });
         }
-
-        res.status(200).json(updatedTask[0]);
+        // response for debug
+        // res.status(200).json(updatedTask[0]);
+        // response for secure
+        res.status(200).json({ message: 'Task updated successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error updating task', error });
     }
@@ -118,8 +131,10 @@ exports.toggleTaskStatus = async (req, res) => {
         if (rowCount === 0) {
             return res.status(404).json({ message: 'Task not found' });
         }
-
-        res.status(200).json({ message: 'Task status updated', task: updatedTasks[0] });
+        // response for debug
+        // res.status(200).json({ message: 'Task status updated', task: updatedTasks[0] });
+        // response for secure
+        res.status(200).json({ message: 'Task status updated' });
     } catch (error) {
         console.error('Error updating task status:', error);
         res.status(500).json({ message: 'Error updating Task status', error: error.message });
