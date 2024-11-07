@@ -19,10 +19,10 @@ exports.listProjects = async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM projects'); // Fetch all projects
         //debug response
-        //res.status(200).json(result.rows); // Send the retrieved rows
+        res.status(200).json(result.rows); // Send the retrieved rows
         
         //secure response
-        res.status(200).json({ message: 'Projects retrieved successfully' });
+        // res.status(200).json({ message: 'Projects retrieved successfully' });
     } catch (error) {
         handleError(res, 'Error retrieving projects', error);
     }

@@ -5,9 +5,9 @@ exports.listTasks = async (req, res) => {
     try {
         const { rows: tasks } = await pool.query('SELECT * FROM tasks'); // Replace 'tasks' with your actual table name
         // response for debug
-        // res.status(200).json(tasks);
+        res.status(200).json(tasks);
         // response for secure
-        res.status(200).json({ message: 'Tasks retrieved successfully' });
+        // res.status(200).json({ message: 'Tasks retrieved successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error retrieving tasks', error });
     }
@@ -28,9 +28,9 @@ exports.listProjectTasks = async (req, res) => {
             return res.status(404).json({ message: 'No tasks found for the given project_id' });
         }
         // response for debug
-        // res.status(200).json(tasks);
+        res.status(200).json(tasks);
         // response for secure
-        res.status(200).json({ message: 'Tasks retrieved successfully' });
+        // res.status(200).json({ message: 'Tasks retrieved successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error retrieving tasks', error });
     }
@@ -68,9 +68,9 @@ exports.viewTask = async (req, res) => {
             return res.status(404).json({ message: 'Task not found' });
         }
         // response for debug
-        // res.status(200).json(task[0]);
+        res.status(200).json(task[0]);
         // response for secure
-        res.status(200).json({ message: 'Task retrieved successfully' });
+        // res.status(200).json({ message: 'Task retrieved successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error retrieving task', error });
     }
