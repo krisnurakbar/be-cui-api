@@ -5,12 +5,12 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const companyRoutes = require('./routes/companyRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const projectProgressRoutes = require('./routes/projectProgressRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const cuProjectRoutes = require('./routes/api/cuProjectRoutes');
 const pool = require('./config/database'); // Import the connection pool from database.js
-
 
 
 // Initialize app
@@ -40,6 +40,7 @@ app.get('/test-db', async (req, res) => {
 // Route Definitions
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
+app.use('/companies', companyRoutes);
 app.use('/projects', projectRoutes);
 app.use('/project/progress', projectProgressRoutes);
 app.use('/tasks', taskRoutes);
@@ -55,3 +56,5 @@ if (process.env.NODE_ENV === 'development') {
     // Export the app for serverless environments like Vercel
     module.exports = app;
 }
+
+

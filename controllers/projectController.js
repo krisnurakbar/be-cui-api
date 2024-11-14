@@ -30,22 +30,22 @@ exports.listProjects = async (req, res) => {
 
 // Create a new project
 exports.createProject = async (req, res) => {
-    const { project_name, cu_project_id, modified_by, start_date, due_date, created_by } = req.body;
+    const { project_name, cu_project_id, modified_by, start_date, due_date, created_by, project_type, company_id } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO projects (project_name, cu_project_id, modified_by, created_at, status, start_date, due_date) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING *',
-            [project_name, cu_project_id, modified_by, 1, start_date, due_date]
+            'INSERT INTO projects (project_name, cu_project_id, modified_by, created_at, status, start_date, due_date, project_type, company_id) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8) RETURNING *',
+            [project_name, cu_project_id, modified_by, 1, start_date, due_date, project_type, company_id]
         );
 
         const newProject = result.rows[0];
-
         // Call createProjectProgress and handle it here
         const progressResult = await exports.createProjectProgress({ 
             body: { 
                 project_id: newProject.id,
                 start_date: start_date,
                 due_date: due_date,
-                created_by: created_by 
+                created_by: created_by, 
+                project_type: project_type
             } 
         });
 
@@ -120,7 +120,7 @@ exports.viewProject = async (req, res) => {
 // Update a project
 exports.updateProject = async (req, res) => {
     const projectId = req.params.id;
-    const { project_name, cu_project_id, modified_by, start_date, due_date, status } = req.body; // Include status and other fields
+    const { project_name, cu_project_id, modified_by, start_date, due_date, status, project_type } = req.body; // Include status and other fields
 
     try {
         const result = await pool.query(
@@ -130,10 +130,11 @@ exports.updateProject = async (req, res) => {
                  modified_by = COALESCE($3, modified_by), 
                  start_date = COALESCE($4, start_date), 
                  due_date = COALESCE($5, due_date), 
-                 status = COALESCE($6, status) 
+                 status = COALESCE($6, status),
+                 project_type = COALESCE($7, project_type) 
              WHERE id = $7 
              RETURNING *`,
-            [project_name, cu_project_id, modified_by, start_date, due_date, status, projectId] // Pass all variables including new fields
+            [project_name, cu_project_id, modified_by, start_date, due_date, status, projectId, project_type] // Pass all variables including new fields
         );
 
         if (result.rowCount === 0) {

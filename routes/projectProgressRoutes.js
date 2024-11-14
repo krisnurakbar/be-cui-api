@@ -11,4 +11,7 @@ router.put('/update/:project_id', projectProgressController.updateProjectProgres
 //route progres delete by id
 router.delete('/delete/:id', projectProgressController.deleteProjectProgress);
 
+//route progress project view
+router.get('/view', projectProgressController.getProjectProgressView);
+
 module.exports = router;
