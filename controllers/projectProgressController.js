@@ -81,3 +81,25 @@ exports.deleteProjectProgress = async (req, res) => {
         res.status(500).json({ message: 'Error deleting project progress', error: error.message });
     }
 };
+
+// get all project progress view
+exports.getProjectProgressView = async (req, res) => {
+  const { company_id } = req.query;
+  if (company_id === undefined) {
+    console.log(company_id);
+    return res.status(400).json({ message: 'company_id is required' });
+  }
+  try {
+    const result = await pool.query(
+      'SELECT * FROM project_progress_view WHERE company_id = $1', [company_id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Error getting project progress view', error: error.message });
+  }
+}
+
