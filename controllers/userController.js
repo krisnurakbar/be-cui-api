@@ -39,7 +39,7 @@ class UserController {
     // Get all users
     async listUsers(req, res) {
         try {
-            const { rows: users } = await pool.query('select u.*, c."name"  from users u join companies c on u.id = c.id '); // Adjust this to your actual users table name
+            const { rows: users } = await pool.query('select u.*, c."name"  from users u join companies c on u.company_id  = c.id'); // Adjust this to your actual users table name
             // ressponse for debug
             res.status(200).json(users);
             
