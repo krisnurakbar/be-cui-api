@@ -8,6 +8,9 @@ router.post('/create', projectProgressController.createProjectProgress);
 //route progres update by id
 router.put('/update/:project_id', projectProgressController.updateProjectProgress);
 
+//route progres update by cu_project_id
+router.put('/updateByParameter/:cu_project_id', projectProgressController.updateProjectProgressByCuProjectId);
+
 //route progres delete by id
 router.delete('/delete/:id', projectProgressController.deleteProjectProgress);
 

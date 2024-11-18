@@ -15,15 +15,39 @@ exports.listTasks = async (req, res) => {
 
 // List all tasks by project_id
 exports.listProjectTasks = async (req, res) => {
-    const projectId = req.params.project_id;
+    const cu_project_id = req.params.cu_project_id;
 
-    if (!projectId) {
+    if (!cu_project_id) {
         return res.status(400).json({ message: 'Missing project_id parameter' });
     }
 
     try {
-        const { rows: tasks } = await pool.query('SELECT * FROM tasks WHERE project_id = $1', [projectId]); // Adjust 'tasks' to your table name
-
+        const { rows: tasks } = await pool.query(
+            `SELECT 
+                t.id, 
+                t.project_id, 
+                t.cu_task_id, 
+                t.task_title, 
+                TO_CHAR(t.start_date, 'DD-MM-YYYY') AS start_date, 
+                TO_CHAR(t.due_date, 'DD-MM-YYYY') AS due_date, 
+                TO_CHAR(t.actual_start_date, 'DD-MM-YYYY') AS actual_start_date, 
+                TO_CHAR(t.actual_end_date, 'DD-MM-YYYY') AS actual_end_date, 
+                t.rate_card, 
+                t.plan_cost, 
+                t.actual_cost, 
+                t.spi, 
+                t.cpi, 
+                t.status, 
+                t.created_at, 
+                t.task_status, 
+                t.actual_progress, 
+                t.plan_progress
+             FROM tasks t
+             JOIN projects p ON t.project_id = p.id
+             WHERE p.cu_project_id = $1
+             ORDER BY t.start_date ASC`,
+            [cu_project_id]
+        ); // Adjust 'tasks' to your table name
         if (tasks.length === 0) {
             return res.status(404).json({ message: 'No tasks found for the given project_id' });
         }
