@@ -218,29 +218,30 @@ exports.updateProjectProgress = async (req, res) => {
 
 // Get project progress by project ID
 exports.getProjectProgressById = async (req, res) => {
-    const projectId = req.params.id; // Get the project ID from the request parameters
+    const cu_project_id = req.params.cu_project_id; // Get the project ID from the request parameters
     try {
         const result = await pool.query(
             `SELECT 
-                id,
-                project_id,
-                TO_CHAR(modified_date, 'YYYY-MM-DD') AS modified_date,
-                week_no,
-                TO_CHAR(report_date, 'YYYY-MM-DD') AS report_date,
-                TO_CHAR(ROUND(CAST(plan_progress AS NUMERIC), 2), 'FM999990.00') || ' %' AS plan_progress,
-                actual_progress || ' %' AS actual_progress,
-                plan_cost,
-                actual_cost,
-                plan_value,
-                actual_value,
-                spi,
-                cpi,
-                created_by
-                FROM 
-                public.project_progress
-            WHERE project_id = $1 
-            order by week_no asc`,
-            [projectId]
+                pp.id,
+                pp.project_id,
+                TO_CHAR(pp.modified_date, 'YYYY-MM-DD') AS modified_date,
+                pp.week_no,
+                TO_CHAR(pp.report_date, 'YYYY-MM-DD') AS report_date,
+                TO_CHAR(ROUND(CAST(pp.plan_progress AS NUMERIC), 2), 'FM999990.00') || ' %' AS plan_progress,
+                pp.actual_progress || ' %' AS actual_progress,
+                pp.plan_cost,
+                pp.actual_cost,
+                pp.plan_value,
+                pp.actual_value,
+                pp.spi,
+                pp.cpi,
+                pp.created_by
+            FROM 
+                public.project_progress pp
+            JOIN projects as p ON pp.project_id = p.id
+            WHERE p.cu_project_id = $1 
+            order by pp.week_no asc`,
+            [cu_project_id]
         );
 
         if (result.rowCount === 0) {
@@ -371,4 +372,20 @@ exports.syncTasksDataManual = async (req, res) => {
     }));
 
     res.end();
+};
+
+exports.getProjectById = async (req, res) => {
+    const cu_project_id = req.params.cu_project_id;
+
+    try {
+        const result = await pool.query(`SELECT * FROM projects WHERE cu_project_id = $1`, [cu_project_id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'No project found with the given cu_project_id' });
+        }
+
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+        handleError(res, 'Error retrieving project by cu_project_id', error);
+    }
 };

@@ -103,3 +103,62 @@ exports.getProjectProgressView = async (req, res) => {
   }
 }
 
+exports.updateProjectProgressByCuProjectId = async (req, res) => {
+  const { cu_project_id } = req.params;
+  // console.log(`Updating project progress for cu_project_id: ${cu_project_id}`);
+  try {
+    const result = await pool.query(
+      'SELECT id FROM projects WHERE cu_project_id = $1',
+      [cu_project_id]
+    );
+    const projectId = result.rows[0]?.id;
+
+    if (!projectId) {
+      return res.status(400).json({ message: 'Project not found', error: 'Project not found' });
+    }
+
+    // Fetch project progress entries with a specific report date
+    const result2 = await pool.query(
+      `SELECT * FROM public.project_progress WHERE report_date = CURRENT_DATE AND project_id = $1`,
+      [projectId]
+    );
+    const projectProgressUpdates = result2.rows;
+
+    // Get the current date for comparisons
+    const currentDate = new Date();
+
+    // Iterate over each project progress entry and perform necessary updates
+    let isUpdated = false;
+    for (const entry of projectProgressUpdates) {
+      // Check if the entry's report_date matches today's date
+      if (
+        entry.report_date.toISOString().split('T')[0] ===
+        currentDate.toISOString().split('T')[0]
+      ) {
+        const spi = await calculateSPI(projectId); // Pass project id for calculation
+        const cpi = await calculateCPI(projectId); // Pass project id for calculation
+        const actualProgress = await calculateActualProgress(projectId); // Pass project id for calculation
+
+        // Update the entry in the database
+        await pool.query(
+          `UPDATE public.project_progress 
+           SET spi = $1, cpi = $2, modified_date = NOW(), actual_progress = $3
+           WHERE id = $4`,
+          [spi, cpi, actualProgress, entry.id]
+        );
+        isUpdated = true;
+      }
+    }
+    if (isUpdated) {
+      console.log('Project progress updated successfully.');
+      res.status(200).json({ message: 'Project progress updated successfully' });
+    } else {
+      console.log('No project progress entries to update for today.');
+      res.status(200).json({ message: 'No project progress entries to update for today.' });
+    }
+  } catch (error) {
+    console.error('Failed to update project progress:', error);
+    res.status(500).json({ message: 'Failed to update project progress', error: error.message });
+  }
+};
+
