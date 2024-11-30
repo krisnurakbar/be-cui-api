@@ -57,4 +57,19 @@ if (process.env.NODE_ENV === 'development') {
     module.exports = app;
 }
 
+// Start the app
+app.listen(process.env.PORT || 80, () => {
+    console.log(`Server running on port ${process.env.PORT || 80}`);
+    (async () => {
+        try {
+            const client = await pool.connect();
+            await client.query('SELECT 1');
+            console.log('Database connection successful');
+            client.release();
+        } catch (error) {
+            console.error('Database connection failed:', error.message);
+        }
+    })();
+});
+
 
