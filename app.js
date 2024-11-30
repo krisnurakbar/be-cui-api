@@ -5,9 +5,13 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const companyRoutes = require('./routes/companyRoutes');
 const projectRoutes = require('./routes/projectRoutes');
+const projectProgressRoutes = require('./routes/projectProgressRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const cuProjectRoutes = require('./routes/api/cuProjectRoutes');
+const pool = require('./config/database'); // Import the connection pool from database.js
+
 
 // Initialize app
 const app = express();
@@ -18,33 +22,54 @@ app.use(bodyParser.json());  // Parse JSON request bodies
 
 // Basic route
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.send('Hiii World!');
 });
 
-app.use('/auth', authRoutes);  // Import authRoutes from separate file
-
-app.use('/users', userRoutes);  // Import userRoutes from separate file
-
-app.use('/projects', projectRoutes);  // Import userRoutes from separate file
-
-app.use('/tasks', taskRoutes);  // Import userRoutes from separate file
-
-app.use('/api/task', cuProjectRoutes);  // Import userRoutes from separate file
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Database connection testing route
+app.get('/test-db', async (req, res) => {
+    try {
+        const client = await pool.connect(); // Get a client from the pool
+        const result = await client.query('SELECT NOW()'); // Test query
+        res.send('Database connection successful: ' + result.rows[0].now);
+        client.release(); // Release the client back to the pool
+    } catch (error) {
+        res.status(500).send('Database connection failed: ' + error.message);
+    }
 });
 
-// Database synchronization
-const sequelize = require('./config/database');
+// Route Definitions
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/companies', companyRoutes);
+app.use('/projects', projectRoutes);
+app.use('/project/progress', projectProgressRoutes);
+app.use('/tasks', taskRoutes);
+app.use('/api/task', cuProjectRoutes);
 
-
-sequelize.sync({ alter: true })
-    .then(() => {
-        console.log('Database synced');
-    })
-    .catch((err) => {
-        console.error('Error syncing database', err);
+// Start the app for local development
+if (process.env.NODE_ENV === 'development') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
     });
+} else {
+    // Export the app for serverless environments like Vercel
+    module.exports = app;
+}
+
+// Start the app
+app.listen(process.env.PORT || 80, () => {
+    console.log(`Server running on port ${process.env.PORT || 80}`);
+    (async () => {
+        try {
+            const client = await pool.connect();
+            await client.query('SELECT 1');
+            console.log('Database connection successful');
+            client.release();
+        } catch (error) {
+            console.error('Database connection failed:', error.message);
+        }
+    })();
+});
+
+

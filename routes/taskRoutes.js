@@ -6,7 +6,7 @@ const taskController = require('../controllers/taskController');
 router.get('/', taskController.listTasks);
 
 // List tasks by project_id
-router.get('/project/:project_id', taskController.listProjectTasks); // New route for getting tasks by project_id
+router.get('/:cu_project_id', taskController.listProjectTasks); // New route for getting tasks by project_id
 
 // Create a new task
 router.post('/', taskController.createTask);

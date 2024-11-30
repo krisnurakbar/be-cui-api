@@ -1,15 +1,13 @@
-// config/database.js
-const { Sequelize } = require('sequelize');
+const { Pool } = require('pg');  // Import the Pool class from pg
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'postgres'
-  }
-);
+// Create a new pool for managing connections to the PostgreSQL database using the DB_URL
+const pool = new Pool({
+  connectionString: process.env.DB_URL, // Use DB_URL directly
+  ssl: {
+    require: true,     // This is for local development only, use SSL in production
+    rejectUnauthorized: false, // Allow self-signed certificates; adjust as necessary
+  },
+});
 
-module.exports = sequelize;
+// Export the pool instance
+module.exports = pool;

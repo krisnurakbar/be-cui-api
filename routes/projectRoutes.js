@@ -25,4 +25,19 @@ router.patch('/:id/:isActive', (req, res, next) => {
     next();
 }, errorHandler(projectController.toggleProjectStatus));
 
+router.post('/update_progress', errorHandler(projectController.updateProjectProgress))
+router.post('/sync_tasks', errorHandler(projectController.syncTasksData))
+
+// Get progress by project ID
+router.get('/:cu_project_id/progress', errorHandler(projectController.getProjectProgressById));
+
+// Get plan progress by project ID
+router.get('/:id/plan-progress', errorHandler(projectController.calculatePlanProgress));
+
+// Sync tasks by project ID Manually
+router.get('/:id/sync-tasks-manual', errorHandler(projectController.syncTasksDataManual));
+
+// Get project by cu_project_id
+router.get('/info/:cu_project_id', errorHandler(projectController.getProjectById));
+
 module.exports = router;
